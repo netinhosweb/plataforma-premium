@@ -1,8 +1,22 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useCart } from '../../context/CartContext';
 
-// ─── WhatsApp config ──────────────────────────────────────────────────────────
-const WHATSAPP_NUMBER = '5511999990000'; // edite aqui (DDI + DDD + número)
+// ─── Config ───────────────────────────────────────────────────────────────────
+const WHATSAPP_NUMBER  = '447760501977';        // DDI + número, sem + nem espaços
+const WEB3FORMS_KEY    = 'ee68320f-d945-42a7-92e1-56fc50bfa664';
+
+// ─── Emoji constants (Unicode escapes avoid source-file encoding issues) ──────
+const E = {
+  clipboard : '\u{1F4CB}',  // 📋
+  person    : '\u{1F464}',  // 👤
+  pin       : '\u{1F4CD}',  // 📍
+  test      : '\u{1F9EA}',  // 🧪
+  box       : '\u{1F4E6}',  // 📦
+  truck     : '\u{1F69A}',  // 🚚
+  money     : '\u{1F4B0}',  // 💰
+  check     : '✅',     // ✅
+  mail      : '\u{1F4E7}',  // 📧
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatBRL(v) {
@@ -20,12 +34,61 @@ function formatCPF(v) {
 }
 function isCPFValid(v) { return v.replace(/\D/g, '').length === 11; }
 
-// ─── Mock email API ───────────────────────────────────────────────────────────
-async function mockSendConfirmationEmail(email, orderData) {
-  // Simulates an async transactional email API call (e.g. SendGrid / Resend)
-  await new Promise((r) => setTimeout(r, 900));
-  console.info('[LabPrime] Confirmation email dispatched to:', email, orderData);
-  return { ok: true, messageId: `LP-MSG-${Date.now()}` };
+// ─── Email via Web3Forms (free, no backend needed) ────────────────────────────
+// Setup: go to https://web3forms.com → enter netinhosweb@gmail.com → confirm → paste key above
+async function sendOrderEmail(orderRef, personal, address, items, subtotal) {
+  const shipping = subtotal >= 500 ? 0 : 35;
+  const isBR     = address.country === 'BR';
+  const docLine  = personal.docSkipped
+    ? `Documento: não informado — ${personal.docMotivo}`
+    : personal.dialCode === '55'
+    ? `CPF: ${personal.documento}`
+    : `Documento: ${personal.documento}`;
+
+  const addrLine = isBR
+    ? `${address.logradouro}, ${address.numero}${address.complemento ? ` – ${address.complemento}` : ''} | ${address.bairro} | ${address.cidade}/${address.estado} | CEP ${address.cep}`
+    : `${address.logradouro}${address.numero ? `, ${address.numero}` : ''}${address.complemento ? ` – ${address.complemento}` : ''} | ${address.cidade}${address.estado ? `, ${address.estado}` : ''}${address.postalCode ? ` | ${address.postalCode}` : ''}`;
+
+  const itemList = items.map((i) =>
+    `${i.quantity}x ${i.name}: ${formatBRL(i.price * i.quantity)}`
+  ).join('\n');
+
+  // If key not configured yet, skip silently and return ok:false
+  if (WEB3FORMS_KEY === 'YOUR_KEY_HERE') {
+    console.warn('[LabPrime] WEB3FORMS_KEY not set — skipping email dispatch.');
+    return { ok: false };
+  }
+
+  try {
+    const res = await fetch('https://api.web3forms.com/submit', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body   : JSON.stringify({
+        access_key : WEB3FORMS_KEY,
+        subject    : `[LabPrime] Novo Pedido ${orderRef} — ${personal.nome}`,
+        from_name  : 'LabPrime Sistema de Pedidos',
+        replyto    : personal.email,
+        botcheck   : false,
+        // ── Order details (appear as fields in the email) ──
+        'Ref do Pedido'         : orderRef,
+        'Cliente'               : personal.nome,
+        'E-mail do Cliente'     : personal.email,
+        'Telefone'              : `+${personal.dialCode} ${personal.telefone}`,
+        'Documento'             : docLine,
+        'Endereço de Entrega'   : addrLine,
+        'Itens'                 : itemList,
+        'Subtotal'              : formatBRL(subtotal),
+        'Frete'                 : shipping === 0 ? 'Grátis' : formatBRL(shipping),
+        'Total'                 : formatBRL(subtotal + shipping),
+      }),
+    });
+    const json = await res.json();
+    console.info('[LabPrime] Email sent:', json);
+    return { ok: json.success === true };
+  } catch (err) {
+    console.error('[LabPrime] Email error:', err);
+    return { ok: false };
+  }
 }
 
 // ─── Global phone country codes (ITU-T E.164, 240+ countries) ────────────────
@@ -235,6 +298,51 @@ const PHONE_COUNTRIES = [
   { dial: '263', code: 'ZW', flag: '🇿🇼', name: 'Zimbábue',            min: 9,  max: 9  },
 ];
 
+// ─── English name aliases (for bilingual search) ──────────────────────────────
+// Keys = ISO code from PHONE_COUNTRIES. Only entries that differ from Portuguese.
+const COUNTRY_EN = {
+  BR:'Brazil', DE:'Germany', FR:'France', ES:'Spain', IT:'Italy', PT:'Portugal',
+  NL:'Netherlands', AT:'Austria', CH:'Switzerland', SE:'Sweden', NO:'Norway',
+  DK:'Denmark', FI:'Finland', PL:'Poland', HU:'Hungary', RO:'Romania',
+  BG:'Bulgaria', HR:'Croatia', CZ:'Czech Republic / Czechia', GR:'Greece',
+  TR:'Turkey', JP:'Japan', CN:'China', IN:'India', ID:'Indonesia',
+  PH:'Philippines', TH:'Thailand', VN:'Vietnam', KR:'South Korea',
+  KP:'North Korea', NZ:'New Zealand', AU:'Australia', MX:'Mexico',
+  AR:'Argentina', CL:'Chile', CO:'Colombia', PE:'Peru', VE:'Venezuela',
+  EC:'Ecuador', PY:'Paraguay', UY:'Uruguay', BO:'Bolivia',
+  EG:'Egypt', SA:'Saudi Arabia', AE:'UAE / Emirates', NG:'Nigeria',
+  ZA:'South Africa', KE:'Kenya', GH:'Ghana', MA:'Morocco', DZ:'Algeria',
+  TN:'Tunisia', LY:'Libya', UG:'Uganda', TZ:'Tanzania', ET:'Ethiopia',
+  SD:'Sudan', SS:'South Sudan', CD:'Congo DRC', CG:'Congo',
+  AO:'Angola', CM:'Cameroon', CI:'Ivory Coast', SN:'Senegal',
+  MZ:'Mozambique', MG:'Madagascar', RW:'Rwanda', GA:'Gabon',
+  BJ:'Benin', BF:'Burkina Faso', ML:'Mali', NE:'Niger', TD:'Chad',
+  ER:'Eritrea', DJ:'Djibouti', SO:'Somalia', LR:'Liberia', SL:'Sierra Leone',
+  GN:'Guinea', GW:'Guinea-Bissau', GM:'Gambia', CV:'Cape Verde',
+  ST:'Sao Tome', GQ:'Equatorial Guinea', LS:'Lesotho', SZ:'Eswatini',
+  BW:'Botswana', NA:'Namibia', ZM:'Zambia', ZW:'Zimbabwe', MW:'Malawi',
+  IR:'Iran', IQ:'Iraq', SY:'Syria', LB:'Lebanon', JO:'Jordan',
+  KW:'Kuwait', QA:'Qatar', BH:'Bahrain', OM:'Oman', YE:'Yemen',
+  IL:'Israel', PK:'Pakistan', BD:'Bangladesh', LK:'Sri Lanka',
+  NP:'Nepal', AF:'Afghanistan', KH:'Cambodia', LA:'Laos', MN:'Mongolia',
+  KZ:'Kazakhstan', UA:'Ukraine', BY:'Belarus', MD:'Moldova',
+  GE:'Georgia', AM:'Armenia', AZ:'Azerbaijan', RS:'Serbia',
+  BA:'Bosnia', ME:'Montenegro', AL:'Albania', MK:'Macedonia',
+  SI:'Slovenia', SK:'Slovakia', EE:'Estonia', LV:'Latvia', LT:'Lithuania',
+  LU:'Luxembourg', BE:'Belgium', IE:'Ireland', IS:'Iceland',
+  CY:'Cyprus', MT:'Malta', AD:'Andorra', MC:'Monaco', SM:'San Marino',
+  LI:'Liechtenstein', RU:'Russia', FJ:'Fiji', PG:'Papua New Guinea',
+  SB:'Solomon Islands', VU:'Vanuatu', TO:'Tonga', WS:'Samoa',
+  KM:'Comoros', MU:'Mauritius', MR:'Mauritania', SC:'Seychelles',
+  CU:'Cuba', JM:'Jamaica', TT:'Trinidad', BB:'Barbados', BS:'Bahamas',
+  HT:'Haiti', DO:'Dominican Republic', CR:'Costa Rica', PA:'Panama',
+  GT:'Guatemala', HN:'Honduras', SV:'El Salvador', NI:'Nicaragua',
+  BZ:'Belize', GY:'Guyana', SR:'Suriname', BT:'Bhutan', TL:'East Timor',
+  BN:'Brunei', MV:'Maldives', KG:'Kyrgyzstan', TJ:'Tajikistan',
+  TM:'Turkmenistan', UZ:'Uzbekistan', XK:'Kosovo', PS:'Palestine',
+  MO:'Macau', TW:'Taiwan', HK:'Hong Kong',
+};
+
 function formatPhoneByCountry(raw, dial) {
   const d = raw.replace(/\D/g, '');
   const country = PHONE_COUNTRIES.find((c) => c.dial === dial) ?? PHONE_COUNTRIES[0];
@@ -296,17 +404,17 @@ function buildWhatsAppURL(personal, address, items, subtotal) {
   const itemLines = items.map((i) => `  • ${i.quantity}× ${i.name}: ${formatBRL(i.price * i.quantity)}`).join('\n');
 
   const message = [
-    '📋 *SOLICITAÇÃO DE PEDIDO – LabPrime*', '',
-    '👤 *Dados do cliente*',
+    `${E.clipboard} *SOLICITAÇÃO DE PEDIDO – LabPrime*`, '',
+    `${E.person} *Dados do cliente*`,
     `Nome: ${personal.nome}`,
     `Telefone: +${personal.dialCode} ${personal.telefone}`,
     `E-mail: ${personal.email}`,
     docLine, '',
-    '📍 *Endereço de entrega*', addressLine, '',
-    '🧪 *Itens solicitados*', itemLines, '',
-    `📦 Subtotal: ${formatBRL(subtotal)}`,
-    `🚚 Frete: ${shipping === 0 ? 'Grátis' : formatBRL(shipping)}`,
-    `💰 *Total: ${formatBRL(total)}*`, '',
+    `${E.pin} *Endereço de entrega*`, addressLine, '',
+    `${E.test} *Itens solicitados*`, itemLines, '',
+    `${E.box} Subtotal: ${formatBRL(subtotal)}`,
+    `${E.truck} Frete: ${shipping === 0 ? 'Grátis' : formatBRL(shipping)}`,
+    `${E.money} *Total: ${formatBRL(total)}*`, '',
     '_Pedido enviado pelo sistema LabPrime para validação._',
   ].join('\n');
 
@@ -396,11 +504,22 @@ function PhoneCountrySelect({ value, onChange }) {
   const selected = PHONE_COUNTRIES.find((c) => c.dial === value) ?? PHONE_COUNTRIES[0];
 
   const filtered = query.trim()
-    ? PHONE_COUNTRIES.filter((c) =>
-        c.name.toLowerCase().includes(query.toLowerCase()) ||
-        c.code.toLowerCase().includes(query.toLowerCase()) ||
-        c.dial.includes(query.replace(/\D/g, ''))
-      )
+    ? (() => {
+        const q     = query.toLowerCase().trim();
+        const qDig  = q.replace(/\D/g, '');
+        // Normalize accents for comparison: "franca" matches "França"
+        const norm  = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        const qNorm = norm(q);
+        return PHONE_COUNTRIES.filter((c) => {
+          const enName = (COUNTRY_EN[c.code] ?? '').toLowerCase();
+          return (
+            norm(c.name).includes(qNorm) ||          // PT name (accent-insensitive)
+            enName.includes(q) ||                      // EN name
+            c.code.toLowerCase().includes(q) ||        // ISO code (e.g. "BR")
+            (qDig && c.dial.includes(qDig))            // dial number (e.g. "55")
+          );
+        });
+      })()
     : PHONE_COUNTRIES;
 
   // Close on outside click
@@ -440,6 +559,13 @@ function PhoneCountrySelect({ value, onChange }) {
               placeholder="Buscar país ou código…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              name={`phone-search-${Math.random()}`}
+              data-form-type="other"
+              data-lpignore="true"
             />
           </div>
           <ul className="max-h-52 overflow-y-auto py-1">
@@ -783,18 +909,20 @@ export default function CheckoutForm({ onSuccess, onBack }) {
 
   async function handleConfirm() {
     setSubmitting(true);
-    const shipping = subtotal >= 500 ? 0 : 35;
+    const shipping  = subtotal >= 500 ? 0 : 35;
+    const orderRef  = `LP-${Date.now().toString(36).toUpperCase()}`;
 
-    // Run order processing + email dispatch in parallel
+    // Run processing + email in parallel
     const [, emailResult] = await Promise.all([
-      new Promise((r) => setTimeout(r, 1400)),               // simulate order API
-      mockSendConfirmationEmail(personal.email, { personal, address, items, subtotal }), // email mock
+      new Promise((r) => setTimeout(r, 800)),
+      sendOrderEmail(orderRef, personal, address, items, subtotal),
     ]);
 
     const orderPayload = {
       personal, address,
       items: [...items], subtotal, shipping,
       total: subtotal + shipping,
+      orderRef,
       emailSent: emailResult?.ok ?? false,
     };
     clearCart();
