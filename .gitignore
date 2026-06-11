@@ -1,0 +1,25 @@
+# Dependências
+node_modules/
+
+# Build outputs
+dist/
+dist2/
+dist3/
+build/
+
+# Arquivos temporários do Vite
+*.mjs
+vite.config.js.timestamp-*
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# Editor
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+npm-debug.log*
