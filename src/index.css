@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    @apply bg-haze font-sans text-navy-900 antialiased;
+  }
+  ::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-haze-100;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-haze-200;
+  }
+}
+
+@layer components {
+  /* ── Buttons ─────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           rounded-xl bg-brand px-5 py-2.5
+           text-sm font-semibold text-white
+           shadow-sm transition-all duration-200
+           hover:bg-brand-dark hover:shadow-lift
+           active:scale-[0.98]
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2
+           rounded-xl border border-haze-200 bg-white px-5 py-2.5
+           text-sm font-semibold text-navy-900
+           transition-all duration-200
+           hover:border-brand hover:text-brand hover:shadow-card
+           active:scale-[0.98]
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2
+           rounded-xl bg-red-50 px-4 py-2
+           text-sm font-medium text-red-600
+           transition-all duration-200
+           hover:bg-red-100
+           active:scale-[0.98];
+  }
+
+  /* ── Form fields ─────────────────────────────── */
+  .field {
+    @apply w-full rounded-xl border border-haze-200 bg-white px-4 py-2.5
+           text-sm text-navy-900 placeholder-mute-light
+           outline-none ring-0
+           transition-all duration-200
+           focus:border-brand focus:ring-2 focus:ring-brand/10
+           disabled:cursor-not-allowed disabled:bg-haze-100 disabled:text-mute;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-mute-dark;
+  }
+
+  /* ── Chip / Badge ────────────────────────────── */
+  .chip {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5
+           text-xs font-medium;
+  }
+  .chip-navy {
+    @apply chip bg-navy-50 text-navy-700;
+  }
+  .chip-brand {
+    @apply chip bg-brand/10 text-brand-dark;
+  }
+  .chip-green {
+    @apply chip bg-emerald-50 text-emerald-700;
+  }
+  .chip-amber {
+    @apply chip bg-amber-50 text-amber-700;
+  }
+
+  /* ── Cards ───────────────────────────────────── */
+  .card {
+    @apply rounded-2xl border border-haze-200 bg-white shadow-card;
+  }
+  .card-hover {
+    @apply card cursor-pointer transition-all duration-300
+           hover:-translate-y-1 hover:shadow-lift;
+  }
+
+  /* ── Section divider ─────────────────────────── */
+  .section-divider {
+    @apply border-t border-haze-200;
+  }
+}
