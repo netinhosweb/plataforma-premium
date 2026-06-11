@@ -56,16 +56,28 @@ export default function ProductCard({ product, onView }) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
 
-  function handleAdd() {
+  function handleAdd(e) {
+    e.stopPropagation();
     addItem(product);
     setAdded(true);
     setTimeout(() => setAdded(false), 1200);
   }
 
+  function handleCardClick() {
+    if (onView) onView(product);
+  }
+
   const iconBg = categoryBg[product.category] ?? 'bg-navy-50 text-navy-400';
 
   return (
-    <article className="card-hover flex flex-col overflow-hidden">
+    <article
+      className="card-hover flex flex-col overflow-hidden cursor-pointer"
+      onClick={handleCardClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && handleCardClick()}
+      aria-label={`Ver detalhes de ${product.name}`}
+    >
       {/* Colored icon header */}
       <div className="relative flex items-center justify-center bg-haze-100 py-8">
         <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${iconBg}`}>
@@ -114,25 +126,15 @@ export default function ProductCard({ product, onView }) {
             <p className="text-[10px] uppercase tracking-wider text-mute-light">Preço unit.</p>
             <p className="text-lg font-bold text-navy-900">{formatBRL(product.price)}</p>
           </div>
-          <div className="flex flex-col items-end gap-1.5">
-            <button
-              onClick={handleAdd}
-              disabled={added}
-              className={`btn-primary px-4 py-2 text-xs transition-all ${
-                added ? 'bg-emerald-600 hover:bg-emerald-600' : ''
-              }`}
-            >
-              {added ? '✓ Adicionado' : '+ Adicionar'}
-            </button>
-            {onView && (
-              <button
-                onClick={() => onView(product)}
-                className="text-[10px] font-medium text-brand hover:underline underline-offset-2 transition-colors"
-              >
-                Ver ficha técnica →
-              </button>
-            )}
-          </div>
+          <button
+            onClick={handleAdd}
+            disabled={added}
+            className={`btn-primary px-4 py-2 text-xs transition-all ${
+              added ? 'bg-emerald-600 hover:bg-emerald-600' : ''
+            }`}
+          >
+            {added ? '✓ Adicionado' : '+ Adicionar'}
+          </button>
         </div>
       </div>
     </article>
