@@ -426,6 +426,26 @@ export default function OrderSuccess({ orderData, onBackToShop }) {
           </div>
         </div>
 
+        {/* Email dispatch notice — shown when confirmation email was sent */}
+        {orderData?.emailSent && personal?.email && (
+          <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}
+              className="h-5 w-5 flex-shrink-0 text-emerald-600 mt-0.5">
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+            </svg>
+            <div>
+              <p className="text-xs font-semibold text-emerald-800">Resumo técnico enviado</p>
+              <p className="mt-0.5 text-xs text-emerald-700">
+                A technical summary has also been dispatched to your email address.
+              </p>
+              <p className="mt-0.5 font-mono text-[11px] text-emerald-600 truncate">
+                {personal.email}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Next steps */}
         <div className="rounded-xl border border-brand/20 bg-brand/5 p-4">
           <p className="text-xs font-semibold text-navy-900">Após o pagamento</p>
