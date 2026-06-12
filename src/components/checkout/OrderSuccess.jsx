@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatBRL(v) {
@@ -343,7 +344,10 @@ function BoletoPanel({ orderId, total }) {
 }
 
 // ─── OrderSuccess ──────────────────────────────────────────────────────────────
-export default function OrderSuccess({ orderData, onBackToShop }) {
+export default function OrderSuccess() {
+  const navigate             = useNavigate();
+  const { state }            = useLocation();
+  const orderData            = state?.orderData ?? null;
   const [payMethod, setPayMethod] = useState('pix');
 
   const orderId = `LP-${strHash(JSON.stringify(orderData ?? {})).toString(36).toUpperCase().slice(0, 7)}`;
@@ -457,7 +461,7 @@ export default function OrderSuccess({ orderData, onBackToShop }) {
         </div>
 
         {/* Back to shop */}
-        <button onClick={onBackToShop} className="btn-ghost w-full py-3">
+        <button onClick={() => navigate('/')} className="btn-ghost w-full py-3">
           Continuar comprando
         </button>
 

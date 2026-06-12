@@ -2,15 +2,14 @@ import { useState } from 'react';
 
 // ─── Mock data ─────────────────────────────────────────────────────────────────
 const PARTNER = {
-  name:            'Dra. Marina Fonseca',
-  referralCode:    'MARINA2024',
-  referralLink:    'https://labprime.com.br/ref/MARINA2024',
-  balance:         1_247.50,
-  pendingBalance:  390.00,
-  totalEarned:     4_820.00,
-  referralCount:   38,
-  conversionRate:  '34%',
-  level:           'Parceiro Ouro',
+  name:           'Dra. Marina Fonseca',
+  referralCode:   'MARINA2024',
+  referralLink:   'https://labprime.com.br/ref/MARINA2024',
+  balance:        1_247.50,
+  linkClicks:     1_284,
+  conversions:    38,
+  conversionRate: '34%',
+  level:          'Parceiro Ouro',
 };
 
 const COMMISSIONS = [
@@ -228,27 +227,22 @@ export default function PartnerDashboard() {
       </section>
 
       <div className="mx-auto max-w-6xl space-y-8 px-6 py-10">
-        {/* Stats grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Stats grid — 3 metric cards */}
+        <div className="grid gap-4 sm:grid-cols-3">
           <StatCard
-            label="Saldo disponível"
+            label="Saldo Disponível para Resgate"
             value={formatBRL(PARTNER.balance)}
-            sub="Disponível para saque"
+            sub="Saque mínimo R$ 100,00"
             accent
           />
           <StatCard
-            label="Saldo pendente"
-            value={formatBRL(PARTNER.pendingBalance)}
-            sub="Aguardando confirmação"
+            label="Cliques no Link"
+            value={PARTNER.linkClicks.toLocaleString('pt-BR')}
+            sub="Últimos 30 dias"
           />
           <StatCard
-            label="Total ganho"
-            value={formatBRL(PARTNER.totalEarned)}
-            sub="Desde o início"
-          />
-          <StatCard
-            label="Indicações"
-            value={PARTNER.referralCount}
+            label="Solicitações Convertidas"
+            value={`${PARTNER.conversions} pedidos`}
             sub={`Taxa de conversão: ${PARTNER.conversionRate}`}
           />
         </div>

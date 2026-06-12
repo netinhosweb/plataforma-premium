@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 
 // ─── Icons (inline SVG, zero deps) ────────────────────────────────────────────
@@ -100,7 +101,8 @@ function formatBRL(value) {
 }
 
 // ─── CartSidebar ──────────────────────────────────────────────────────────────
-export default function CartSidebar({ onCheckout }) {
+export default function CartSidebar() {
+  const navigate = useNavigate();
   const { items, isOpen, closeCart, subtotal, itemCount, clearCart } = useCart();
 
   const shipping = subtotal >= 500 ? 0 : 35;
@@ -230,7 +232,7 @@ export default function CartSidebar({ onCheckout }) {
             <button
               onClick={() => {
                 closeCart();
-                onCheckout?.();
+                navigate('/checkout');
               }}
               className="btn-primary mt-4 w-full py-3 text-sm"
             >

@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
+import { useNavigate, useLocation, useParams, Navigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import { products } from '../../data/products';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatBRL(v) {
@@ -492,7 +494,12 @@ function TabRendimento({ product }) {
 }
 
 // ─── ProductDetail (main export) ─────────────────────────────────────────────
-export default function ProductDetail({ product, onBack }) {
+export default function ProductDetail() {
+  const navigate  = useNavigate();
+  const { sku }   = useParams();
+  const { state } = useLocation();
+  const product   = state?.product ?? products.find(p => p.sku === sku) ?? null;
+
   const { addItem } = useCart();
 
   const [activeThumb, setActiveThumb] = useState(0);
@@ -500,10 +507,13 @@ export default function ProductDetail({ product, onBack }) {
   const [activeTab,   setActiveTab]   = useState('sobre');
   const [addedAnim,   setAddedAnim]   = useState(false);
 
-  const s      = seededHash(product.sku);
+  const s      = seededHash(product?.sku ?? '');
   const purity = (98 + (s % 180) / 100).toFixed(1);
-  const coa    = useMemo(() => makeCoA(product), [product]);
-  const pal    = CAT_PALETTE[product.category] ?? CAT_PALETTE.kits;
+  const coa    = useMemo(() => product ? makeCoA(product) : {}, [product]);
+  const pal    = CAT_PALETTE[product?.category] ?? CAT_PALETTE.kits;
+
+  // Guard: if product not found, redirect to catalog
+  if (!product) return <Navigate to="/" replace />;
 
   function handleAddToCart() {
     for (let i = 0; i < qty; i++) addItem(product);
@@ -535,7 +545,7 @@ export default function ProductDetail({ product, onBack }) {
       <div className="sticky top-0 z-40 border-b border-haze-200 bg-white/95 backdrop-blur-md">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <button
-            onClick={onBack}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 rounded-xl border border-haze-200 bg-white px-4 py-2 text-sm font-medium text-navy-900 shadow-sm transition-all hover:border-brand hover:text-brand hover:shadow-lift active:scale-95"
           >
             <ChevronLeft />

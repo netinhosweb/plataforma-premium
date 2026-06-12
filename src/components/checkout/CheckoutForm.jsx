@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -299,7 +300,6 @@ const PHONE_COUNTRIES = [
 ];
 
 // ─── English name aliases (for bilingual search) ──────────────────────────────
-// Keys = ISO code from PHONE_COUNTRIES. Only entries that differ from Portuguese.
 const COUNTRY_EN = {
   BR:'Brazil', DE:'Germany', FR:'France', ES:'Spain', IT:'Italy', PT:'Portugal',
   NL:'Netherlands', AT:'Austria', CH:'Switzerland', SE:'Sweden', NO:'Norway',
@@ -507,22 +507,20 @@ function PhoneCountrySelect({ value, onChange }) {
     ? (() => {
         const q     = query.toLowerCase().trim();
         const qDig  = q.replace(/\D/g, '');
-        // Normalize accents for comparison: "franca" matches "França"
         const norm  = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
         const qNorm = norm(q);
         return PHONE_COUNTRIES.filter((c) => {
           const enName = (COUNTRY_EN[c.code] ?? '').toLowerCase();
           return (
-            norm(c.name).includes(qNorm) ||          // PT name (accent-insensitive)
-            enName.includes(q) ||                      // EN name
-            c.code.toLowerCase().includes(q) ||        // ISO code (e.g. "BR")
-            (qDig && c.dial.includes(qDig))            // dial number (e.g. "55")
+            norm(c.name).includes(qNorm) ||
+            enName.includes(q) ||
+            c.code.toLowerCase().includes(q) ||
+            (qDig && c.dial.includes(qDig))
           );
         });
       })()
     : PHONE_COUNTRIES;
 
-  // Close on outside click
   useEffect(() => {
     function handleClick(e) {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -533,7 +531,6 @@ function PhoneCountrySelect({ value, onChange }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // Focus search when opened
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 50);
   }, [open]);
@@ -599,7 +596,6 @@ function StepPersonal({ data, onChange, onNext }) {
   const selectedPhone = PHONE_COUNTRIES.find((c) => c.dial === data.dialCode) ?? PHONE_COUNTRIES[0];
   const cpfDigits     = data.documento.replace(/\D/g, '');
 
-  // Document validation (CPF mandatory for BR)
   const docValid = data.docSkipped
     ? data.docMotivo.trim().length >= 10
     : isBR
@@ -889,7 +885,8 @@ function StepReview({ personal, address, items, subtotal, onConfirm, onBack, loa
 }
 
 // ─── CheckoutForm (main) ──────────────────────────────────────────────────────
-export default function CheckoutForm({ onSuccess, onBack }) {
+export default function CheckoutForm() {
+  const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
   const [step, setStep]               = useState(1);
   const [submitting, setSubmitting]   = useState(false);
@@ -912,7 +909,6 @@ export default function CheckoutForm({ onSuccess, onBack }) {
     const shipping  = subtotal >= 500 ? 0 : 35;
     const orderRef  = `LP-${Date.now().toString(36).toUpperCase()}`;
 
-    // Run processing + email in parallel
     const [, emailResult] = await Promise.all([
       new Promise((r) => setTimeout(r, 800)),
       sendOrderEmail(orderRef, personal, address, items, subtotal),
@@ -926,7 +922,7 @@ export default function CheckoutForm({ onSuccess, onBack }) {
       emailSent: emailResult?.ok ?? false,
     };
     clearCart();
-    onSuccess?.(orderPayload);
+    navigate('/sucesso', { state: { orderData: orderPayload } });
   }
 
   function handleWhatsApp() {
@@ -937,7 +933,7 @@ export default function CheckoutForm({ onSuccess, onBack }) {
   return (
     <div className="min-h-screen bg-haze py-10">
       <div className="mx-auto max-w-5xl px-6">
-        <button onClick={onBack} className="mb-6 flex items-center gap-1.5 text-sm text-mute transition-colors hover:text-navy-900">
+        <button onClick={() => navigate('/')} className="mb-6 flex items-center gap-1.5 text-sm text-mute transition-colors hover:text-navy-900">
           <ChevronLeft /> Voltar ao catálogo
         </button>
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">

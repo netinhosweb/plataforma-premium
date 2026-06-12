@@ -1,3 +1,4 @@
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -18,21 +19,28 @@ const LogoIcon = () => (
   </svg>
 );
 
+const navLinks = [
+  { path: '/',          label: 'Catálogo'  },
+  { path: '/parceiros', label: 'Parceiros' },
+];
+
 // ─── Navbar ───────────────────────────────────────────────────────────────────
-export default function Navbar({ currentView, onNavigate }) {
+export default function Navbar() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { itemCount, toggleCart } = useCart();
 
-  const navLinks = [
-    { id: 'catalog',   label: 'Catálogo'   },
-    { id: 'dashboard', label: 'Parceiros'  },
-  ];
+  function isActive(path) {
+    if (path === '/') return location.pathname === '/' || location.pathname.startsWith('/produto');
+    return location.pathname.startsWith(path);
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-haze-200 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
         {/* Logo */}
         <button
-          onClick={() => onNavigate('catalog')}
+          onClick={() => navigate('/')}
           className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
         >
           <LogoIcon />
@@ -45,10 +53,10 @@ export default function Navbar({ currentView, onNavigate }) {
         <nav className="hidden items-center gap-1 sm:flex">
           {navLinks.map((link) => (
             <button
-              key={link.id}
-              onClick={() => onNavigate(link.id)}
+              key={link.path}
+              onClick={() => navigate(link.path)}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition-all
-                ${currentView === link.id
+                ${isActive(link.path)
                   ? 'bg-navy-900 text-white'
                   : 'text-mute hover:bg-haze hover:text-navy-900'}`}
             >
@@ -76,10 +84,10 @@ export default function Navbar({ currentView, onNavigate }) {
       <div className="flex border-t border-haze-200 sm:hidden">
         {navLinks.map((link) => (
           <button
-            key={link.id}
-            onClick={() => onNavigate(link.id)}
+            key={link.path}
+            onClick={() => navigate(link.path)}
             className={`flex-1 py-2 text-xs font-medium transition-colors
-              ${currentView === link.id
+              ${isActive(link.path)
                 ? 'border-b-2 border-brand text-brand'
                 : 'text-mute'}`}
           >

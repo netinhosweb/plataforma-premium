@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { products, CATEGORIES } from '../../data/products';
 import ProductCard from './ProductCard';
 
@@ -11,7 +12,8 @@ const SearchIcon = () => (
 );
 
 // ─── ProductCatalog ───────────────────────────────────────────────────────────
-export default function ProductCatalog({ onViewProduct }) {
+export default function ProductCatalog() {
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('all');
   const [query, setQuery] = useState('');
 
@@ -109,7 +111,7 @@ export default function ProductCatalog({ onViewProduct }) {
             </p>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filtered.map((p) => (
-                <ProductCard key={p.id} product={p} onView={onViewProduct} />
+                <ProductCard key={p.id} product={p} onView={(p) => navigate(`/produto/${p.sku}`, { state: { product: p } })} />
               ))}
             </div>
           </>
